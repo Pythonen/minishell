@@ -2,22 +2,52 @@ use nix::sys::wait::waitpid;
 use nix::unistd::ForkResult;
 use nix::unistd::{execvp, fork};
 use std::ffi::CStr;
+use std::io::{self};
 
+// TODO: why is execvp blocking other arms? If #[allow(unreachable_code)] macro is disabled,
+// it shows warning, but works correctly (?)
+#[allow(unreachable_code)]
 fn main() {
-    match unsafe { fork() } {
-        Ok(ForkResult::Child) => {
-            execvp(
-                CStr::from_bytes_with_nul(b"ls\0").expect("command failed"),
-                &[CStr::from_bytes_with_nul(b"-l\0").expect("args failed")],
-            )
-            .expect("exec failed");
+    loop {
+        // User input should be a command of several arguments,
+        // like "ls -la"
+        let mut input = String::new();
+        io::stdin()
+            .read_line(&mut input)
+            .expect("Error reading input");
+        // The input string is separated to individual words vector
+        // like "ls" "-la"
+        // to simplify further processing
+        let input: Vec<&str> = input.split_whitespace().collect();
+
+        // Creating a new child process according to => https://man7.org/linux/man-pages/man2/fork.2.html
+        match unsafe { fork() } {
+            Ok(ForkResult::Child) => {
+                // Hacky.. some better way to append to a str would be nice
+                let command = String::from(input[0]) + "\0";
+                let args = &input[1..];
+                // let arr: Vec<&CStr> = args
+                //     .iter()
+                //     .map(|i| {
+                //         return CStr::from_bytes_with_nul(
+                //             (String::from(*i) + "\0").as_str().as_bytes(),
+                //         )
+                //         .expect("Failed :(");
+                //     })
+                //     .collect();
+                execvp(
+                    CStr::from_bytes_with_nul(command.as_str().as_bytes()).expect("command failed"),
+                    &[CStr::from_bytes_with_nul(b"-l\0").expect("args failed")],
+                )
+                .expect("exec failed");
+            }
+            Ok(ForkResult::Parent { child }) => {
+                waitpid(child, None).unwrap();
+            }
+            Err(err) => panic!(
+                "Could not create new child process and it caused error {}",
+                err
+            ),
         }
-        Ok(ForkResult::Parent { child }) => {
-            waitpid(child, None).unwrap();
-        }
-        Err(err) => panic!(
-            "Could not create new child process and it caused error {}",
-            err
-        ),
     }
 }
