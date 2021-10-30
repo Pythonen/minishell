@@ -1,3 +1,4 @@
+use nix::libc::perror;
 use nix::sys::wait::waitpid;
 use nix::unistd::ForkResult;
 use nix::unistd::{execvp, fork};
@@ -35,11 +36,19 @@ fn main() {
                 //         .expect("Failed :(");
                 //     })
                 //     .collect();
-                execvp(
-                    CStr::from_bytes_with_nul(command.as_str().as_bytes()).expect("command failed"),
-                    &[CStr::from_bytes_with_nul(b"-l\0").expect("args failed")],
-                )
-                .expect("exec failed");
+
+                // Compiler is suggesting to match if this function returns error
+                // But we are taking it into account with perror
+                #[allow(unused_must_use)]
+                {
+                    execvp(
+                        CStr::from_bytes_with_nul(command.as_str().as_bytes())
+                            .expect("command failed"),
+                        &[CStr::from_bytes_with_nul(b"-l\0").expect("args failed")],
+                    );
+                }
+                unsafe { perror(command.as_ptr() as *const i8) };
+                std::process::exit(-1);
             }
             Ok(ForkResult::Parent { child }) => {
                 waitpid(child, None).unwrap();
