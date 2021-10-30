@@ -5,9 +5,6 @@ use nix::unistd::{execvp, fork};
 use std::ffi::CStr;
 use std::io::{self};
 
-// TODO: why is execvp blocking other arms? If #[allow(unreachable_code)] macro is disabled,
-// it shows warning, but works correctly (?)
-#[allow(unreachable_code)]
 fn main() {
     loop {
         // User input should be a command of several arguments,
