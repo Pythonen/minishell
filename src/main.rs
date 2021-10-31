@@ -23,7 +23,7 @@ fn main() {
             Ok(ForkResult::Child) => {
                 // Hacky.. some better way to append to a str would be nice
                 let command = String::from(input[0]) + "\0";
-                let args = &input[1..];
+                let _args = &input[1..];
                 // let arr: Vec<&CStr> = args
                 //     .iter()
                 //     .map(|i| {
@@ -33,19 +33,19 @@ fn main() {
                 //         .expect("Failed :(");
                 //     })
                 //     .collect();
-
-                match execvp(
-                    CStr::from_bytes_with_nul(command.as_str().as_bytes()).expect("command failed"),
-                    &[CStr::from_bytes_with_nul(b"-l\0").expect("args failed")],
-                ) {
+                let command_cstr =
+                    CStr::from_bytes_with_nul(command.as_str().as_bytes()).expect("command failed");
+                let args_cstr = &[CStr::from_bytes_with_nul(b"-la\0").expect("args failed")];
+                match execvp(command_cstr, args_cstr) {
                     Ok(_) => (),
-                    Err(_) => {
+                    _ => {
                         unsafe { perror(command.as_ptr() as *const i8) };
                         std::process::exit(-1);
                     }
                 }
             }
             Ok(ForkResult::Parent { child }) => {
+                // TODO: This could be handled some better way rather than just unwrapping.
                 waitpid(child, None).unwrap();
             }
             Err(err) => panic!(
