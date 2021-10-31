@@ -34,18 +34,16 @@ fn main() {
                 //     })
                 //     .collect();
 
-                // Compiler is suggesting to match if this function returns error
-                // But we are taking it into account with perror
-                #[allow(unused_must_use)]
-                {
-                    execvp(
-                        CStr::from_bytes_with_nul(command.as_str().as_bytes())
-                            .expect("command failed"),
-                        &[CStr::from_bytes_with_nul(b"-l\0").expect("args failed")],
-                    );
+                match execvp(
+                    CStr::from_bytes_with_nul(command.as_str().as_bytes()).expect("command failed"),
+                    &[CStr::from_bytes_with_nul(b"-l\0").expect("args failed")],
+                ) {
+                    Ok(_) => (),
+                    Err(_) => {
+                        unsafe { perror(command.as_ptr() as *const i8) };
+                        std::process::exit(-1);
+                    }
                 }
-                unsafe { perror(command.as_ptr() as *const i8) };
-                std::process::exit(-1);
             }
             Ok(ForkResult::Parent { child }) => {
                 waitpid(child, None).unwrap();
