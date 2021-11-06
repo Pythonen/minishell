@@ -23,14 +23,13 @@ fn main() {
             Ok(ForkResult::Child) => {
                 // Hacky.. some better way to append to a str would be nice
                 let command = String::from(input[0]) + "\0";
-                let _args = &input[1..];
+                // collecting args for the command above
+                let args = &input[1..];
                 // let arr: Vec<&CStr> = args
-                //     .iter()
+                //     .into_iter()
                 //     .map(|i| {
-                //         return CStr::from_bytes_with_nul(
-                //             (String::from(*i) + "\0").as_str().as_bytes(),
-                //         )
-                //         .expect("Failed :(");
+                //         CStr::from_bytes_with_nul((String::from(*i) + "\0").as_str().as_bytes())
+                //             .expect("Failed :(")
                 //     })
                 //     .collect();
                 let command_cstr =
