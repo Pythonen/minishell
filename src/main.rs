@@ -3,6 +3,7 @@ use nix::sys::wait::waitpid;
 use nix::unistd::ForkResult;
 use nix::unistd::{execvp, fork};
 use std::ffi::CStr;
+use std::ffi::CString;
 use std::io::{self};
 
 fn main() {
@@ -25,17 +26,15 @@ fn main() {
                 let command = String::from(input[0]) + "\0";
                 // collecting args for the command above
                 let args = &input[1..];
-                // let arr: Vec<&CStr> = args
-                //     .into_iter()
-                //     .map(|i| {
-                //         CStr::from_bytes_with_nul((String::from(*i) + "\0").as_str().as_bytes())
-                //             .expect("Failed :(")
-                //     })
-                //     .collect();
+                let arr: Vec<_> = args
+                    .into_iter()
+                    .map(|i| {
+                        CString::new((String::from(*i)).as_str().as_bytes()).expect("Failed :(")
+                    })
+                    .collect();
                 let command_cstr =
                     CStr::from_bytes_with_nul(command.as_str().as_bytes()).expect("command failed");
-                let args_cstr = &[CStr::from_bytes_with_nul(b"-la\0").expect("args failed")];
-                match execvp(command_cstr, args_cstr) {
+                match execvp(command_cstr, &arr) {
                     Ok(_) => (),
                     _ => {
                         unsafe { perror(command.as_ptr() as *const i8) };
