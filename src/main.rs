@@ -2,9 +2,8 @@ use nix::libc::perror;
 use nix::sys::wait::waitpid;
 use nix::unistd::ForkResult;
 use nix::unistd::{execvp, fork};
-use std::ffi::CStr;
-use std::ffi::CString;
-use std::io::{self};
+use std::ffi::{CStr, CString};
+use std::io;
 
 fn main() {
     loop {
@@ -42,10 +41,10 @@ fn main() {
                     }
                 }
             }
-            Ok(ForkResult::Parent { child }) => {
-                // TODO: This could be handled some better way rather than just unwrapping.
-                waitpid(child, None).unwrap();
-            }
+            Ok(ForkResult::Parent { child }) => match waitpid(child, None) {
+                Ok(_) => (),
+                Err(err) => panic!("Could not wait for a process to change status {}", err),
+            },
             Err(err) => panic!(
                 "Could not create new child process and it caused error {}",
                 err
